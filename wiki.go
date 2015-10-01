@@ -2,13 +2,14 @@ package main
 
 import (
 	"fmt"
+	"html/template"
 	"io/ioutil"
 	"net/http"
 )
 
 type Page struct {
 	Title string
-	Body []byte
+	Body  []byte
 }
 
 func (p *Page) save() error {
@@ -27,9 +28,8 @@ func loadPage(title string) (*Page, error) {
 
 func viewHandler(w http.ResponseWriter, r *http.Request) {
 	title := r.URL.Path[len("/view/"):]
-	fmt.Println(title)
 	p, _ := loadPage(title)
-	fmt.Fprintf(w, "<h1>%s</h1><div>%s</div>", p.Title, p.Body)
+	renderTemplate(w, "view", p)
 }
 
 func editHandler(w http.ResponseWriter, r *http.Request) {
@@ -38,21 +38,29 @@ func editHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		p = &Page{Title: title}
 	}
-	fmt.Fprintf(w, "<h1>Editing %s</h1>"+
-		"<form action=\"/save/%s\" method=\"POST\">"+
-		"<textarea name=\"body\">%s</textarea><br>"+
-		"<input type=\"submit\" value=\"Save\">"+
-		"</form>",
-		p.Title, p.Title, p.Body)
+	fmt.Println("Inside editHandler")
+	t, _ := template.ParseFiles("edit.html")
+	t.Execute(w, p)
 }
 
+func renderTemplate(w http.ResponseWriter, tmpl string, p *Page) {
+	t, err := template.ParseFiles(tmpl + ".html")
+	if err != nil {
+		fmt.Println(err)
+	} else {
+		t.Execute(w, p)
+	}
+}
 func main() {
-//	p1 := &Page{Title: "TestPage", Body: []byte("This is a sample page")}
-//	p1.save()
-//	p2, _ := loadPage("TestPage")
-//	fmt.Println(string(p2.Body))
+	//	p1 := &Page{Title: "TestPage", Body: []byte("This is a sample page")}
+	//	p1.save()
+	//	p2, _ := loadPage("TestPage")
+	//	fmt.Println(string(p2.Body))
+	fmt.Println("Starting the webserver...\n")
 	http.HandleFunc("/view/", viewHandler)
 	http.HandleFunc("/edit/", editHandler)
-//	http.HandleFunc("/save/", saveHandler)
+	//	http.HandleFunc("/save/", saveHandler)
 	http.ListenAndServe(":8080", nil)
+	fmt.Println("Stopping the webserver...\n")
+
 }
