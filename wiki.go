@@ -48,8 +48,11 @@ func editHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func saveHandler(w http.ResponseWriter, r *http.Request) {
+	fmt.Println("URL Path is " + r.URL.Path)
 	title := r.URL.Path[len("/save/"):]
+	fmt.Println("Title is " + title)
 	body := r.FormValue("body")
+	fmt.Println("Body is " + body)
 	p := &Page{Title: title, Body: []byte(body)}
 	err := p.save()
 	if err != nil {
