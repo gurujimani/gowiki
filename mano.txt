@@ -1,0 +1,1 @@
+Adding a new wiki page for Mano.  This will be displayed in the index page.

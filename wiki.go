@@ -5,6 +5,7 @@ import (
 	"html/template"
 	"io/ioutil"
 	"net/http"
+	"path/filepath"
 )
 
 type Page struct {
@@ -24,6 +25,27 @@ func loadPage(title string) (*Page, error) {
 		return nil, err
 	}
 	return &Page{Title: title, Body: body}, nil
+}
+
+func indexHandler(w http.ResponseWriter, r *http.Request) {
+	wiki_list := make([]string, 3)
+	fmt.Println("Inside index handler")
+	files, _ := filepath.Glob("*.txt")
+	for _, f := range files {
+		wiki_list = append(wiki_list, f[:(len(f)-4)])
+		//fmt.Println(f[:(len(f) - 4)])
+	}
+	fmt.Println(wiki_list)
+	t, err := template.ParseFiles("index.html")
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	err = t.Execute(w, wiki_list)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+
 }
 
 func viewHandler(w http.ResponseWriter, r *http.Request) {
@@ -47,9 +69,26 @@ func editHandler(w http.ResponseWriter, r *http.Request) {
 	t.Execute(w, p)
 }
 
+func newHandler(w http.ResponseWriter, r *http.Request) {
+	fmt.Println("Inside newhandler")
+	t, err := template.ParseFiles("new.html")
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	err = t.Execute(w, nil)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+}
+
 func saveHandler(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("URL Path is " + r.URL.Path)
+	fmt.Println("Inside saveHandler")
+
 	title := r.URL.Path[len("/save/"):]
+	if title == "" {
+		title = r.FormValue("title")
+	}
 	fmt.Println("Title is " + title)
 	body := r.FormValue("body")
 	fmt.Println("Body is " + body)
@@ -74,12 +113,10 @@ func renderTemplate(w http.ResponseWriter, tmpl string, p *Page) {
 }
 
 func main() {
-	//	p1 := &Page{Title: "TestPage", Body: []byte("This is a sample page")}
-	//	p1.save()
-	//	p2, _ := loadPage("TestPage")
-	//	fmt.Println(string(p2.Body))
 	fmt.Println("Starting the webserver...\n")
+	http.HandleFunc("/index/", indexHandler)
 	http.HandleFunc("/view/", viewHandler)
+	http.HandleFunc("/new/", newHandler)
 	http.HandleFunc("/edit/", editHandler)
 	http.HandleFunc("/save/", saveHandler)
 	http.ListenAndServe(":8080", nil)
